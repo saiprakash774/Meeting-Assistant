@@ -1,0 +1,305 @@
+/* ── Shell ── */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.toolbar h1 { margin: 0; font-size: 1.2rem; }
+.toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ── Buttons ── */
+button {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+button.primary { background: #111827; color: #fff; }
+button.danger   { background: #b91c1c; color: #fff; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.link-button {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.82rem;
+}
+.link-button.resume-btn { color: #15803d; font-weight: 600; }
+
+/* ── Inputs / labels ── */
+label { display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; }
+input, textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+}
+.label-hint { font-size: 0.75rem; color: #6b7280; font-weight: 400; margin-left: 4px; }
+.checkbox-label { flex-direction: row; align-items: center; gap: 8px; }
+.checkbox-label input[type='checkbox'] {
+  width: 16px; height: 16px;
+  accent-color: #111827;
+  border: none; border-radius: 4px; padding: 0;
+}
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+/* ── Misc ── */
+.error       { margin: 0; color: #b91c1c; }
+.status-info { margin: 0; color: #2563eb; font-size: 0.85rem; }
+.muted       { color: #6b7280; font-size: 0.85rem; margin: 0; }
+.preview-label { margin-top: 8px; }
+
+/* ── Status row (vibe pill) ── */
+.status-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-shrink: 0; }
+.vibe-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid #e5e7eb; background: #fff;
+  border-radius: 999px; padding: 5px 10px; font-size: 0.82rem;
+}
+.vibe-pill .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+.vibe-pill.positive .dot { background: #16a34a; }
+.vibe-pill.neutral  .dot { background: #ca8a04; }
+.vibe-pill.critical .dot { background: #dc2626; }
+
+/* ── Settings screen ── */
+.settings-screen {
+  background: #fff; border-radius: 14px; padding: 20px;
+  border: 1px solid #e5e7eb;
+  display: flex; flex-direction: column; gap: 12px;
+  overflow: auto; min-height: 0; flex: 1;
+}
+.settings-header { display: flex; align-items: center; justify-content: space-between; }
+.settings-header h2 { margin: 0; font-size: 1.1rem; }
+.settings-close { font-size: 0.9rem; }
+
+/* ── Three-column grid ── */
+.columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
+  flex: 1;            /* fills remaining height in app-shell flex column */
+}
+
+/* Each column is a flex column; title-row sits outside the panel */
+.column {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.column h2 { margin: 0; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.04em; }
+
+/* Title row — outside the bordered panel, same height across all three */
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 28px;   /* ensures equal height even if one column has no chip */
+}
+
+.status-chip {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #475569;
+  background: #f8fafc;
+  text-transform: uppercase;
+}
+.status-chip.live { color: #166534; border-color: #86efac; background: #f0fdf4; }
+
+/* ── The bordered panel — same for all three columns ── */
+.panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+
+/*
+  col-panel = the bordered box that fills remaining column height.
+  It contains:
+    .col-subhead  — sticky non-scrolling header inside the panel
+    .col-scroll   — the scrollable content area
+  (For chat it also contains .chat-form as a sticky footer.)
+*/
+.col-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Sticky sub-heading inside the panel (panels 1 & 2) */
+.col-subhead {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.col-subhead.split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.col-subhead span { font-size: 0.8rem; color: #94a3b8; }
+
+/* Scrollable content area inside each panel */
+.col-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Chat messages need flex-column layout for gap */
+.col-scroll.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+/* ── Transcript lines ── */
+.transcript-line {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.transcript-line span { color: #6b7280; font-size: 0.78rem; padding-top: 1px; }
+.transcript-line p    { margin: 0; white-space: pre-wrap; font-size: 0.88rem; line-height: 1.5; }
+.transcript-line.preview p { color: #475569; font-style: italic; }
+
+/* ── Suggestion batches ── */
+.suggestion-batch {
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.suggestion-batch:last-child { border-bottom: none; }
+.suggestion-batch h3 {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.latency { font-size: 0.72rem; color: #9ca3af; font-weight: 400; }
+
+.suggestion-card {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  transition: background 0.12s;
+}
+.suggestion-card:hover { background: #f8fafc; }
+.suggestion-card p     { margin: 0; color: #1e293b; font-size: 0.87rem; line-height: 1.45; }
+.suggestion-card small { color: #94a3b8; font-size: 0.76rem; }
+
+/* Intent pills */
+.intent-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+.intent-pill.question,
+.intent-pill.question_to_ask { background: #dbeafe; color: #1d4ed8; }
+.intent-pill.answer           { background: #dcfce7; color: #15803d; }
+.intent-pill.fact_check       { background: #fef9c3; color: #854d0e; }
+.intent-pill.talking_point,
+.intent-pill.clarify          { background: #f3f4f6; color: #374151; }
+
+/* ── Chat messages ── */
+.chat-message { border-radius: 10px; padding: 8px 10px; }
+.chat-message.user      { background: #eef2ff; }
+.chat-message.assistant { background: #f9fafb; }
+.chat-message .meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  margin-bottom: 5px;
+  color: #475569;
+}
+.chat-message .meta strong { color: #1e293b; }
+
+/* ── Chat form (sticky footer inside col-panel for chat column) ── */
+.chat-form {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 8px;
+  margin-top: 6px;
+}
+.chat-form input { flex: 1; }
+
+/* ── Markdown body ── */
+.markdown-body { font-size: 0.88rem; line-height: 1.6; }
+.markdown-body > * + * { margin-top: 0.45em; }
+.markdown-body p { margin: 0 0 0.4em; white-space: normal; }
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4 {
+  margin: 0.7em 0 0.25em; font-size: 0.93rem; font-weight: 600;
+}
+.markdown-body ul,.markdown-body ol { margin: 0.3em 0; padding-left: 1.3em; }
+.markdown-body li  { margin-bottom: 0.2em; }
+.markdown-body code {
+  background: #f3f4f6; border-radius: 4px; padding: 1px 4px; font-size: 0.84em;
+}
+.markdown-body pre {
+  background: #f3f4f6; border-radius: 6px; padding: 8px; overflow-x: auto;
+}
+.markdown-body pre code { background: none; padding: 0; }
+.markdown-body blockquote {
+  border-left: 3px solid #d1d5db; margin: 0.4em 0;
+  padding: 0 0 0 0.8em; color: #6b7280;
+}
+.markdown-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 0.6em 0; }
+.markdown-body table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin: 0.5em 0; }
+.markdown-body th,.markdown-body td { border: 1px solid #d1d5db; padding: 5px 8px; text-align: left; }
+.markdown-body th { background: #f3f4f6; font-weight: 600; }
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .status-row { flex-direction: column; align-items: flex-start; }
+  .columns { grid-template-columns: 1fr; height: auto; }
+  .grid-3  { grid-template-columns: 1fr; }
+}
