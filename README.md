@@ -297,6 +297,14 @@ The fix captures the value before resetting it, so the final batch now generates
 
 ---
 
+**Final suggestion batch for short recordings**
+
+If you stopped the mic before the 30-second commit timer fired, the original stop trigger would not generate a final suggestion batch — it only fired if a full 30-second commit had already happened during the session. So a short recording of 10–20 seconds would be transcribed correctly but no suggestions would ever appear.
+
+The fix separates the stop trigger from the 30-second commit gate entirely. Now, as long as the total accumulated transcript is at least 75 characters (roughly 10–12 words, about 3–4 seconds of normal speech), a final suggestion batch is generated on stop. This threshold is intentionally lower than the 300-character minimum used for auto-refresh, because the stop trigger fires only once and should process whatever was said.
+
+---
+
 ## Submission checklist
 
 - [x] README with setup, stack, prompt strategy, and tradeoffs

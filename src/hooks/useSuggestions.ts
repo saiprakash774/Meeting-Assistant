@@ -174,7 +174,7 @@ export function useSuggestions({
         buildSessionHeader(sessionStartRef.current) +
         rawContext.slice(-settingsRef.current.suggestionContextChars)
 
-      if (context.length < MIN_SUGGESTION_CONTEXT_CHARS) {
+      if (trigger !== 'stop' && context.length < MIN_SUGGESTION_CONTEXT_CHARS) {
         if (trigger === 'manual') setRefreshStatus('Not enough transcript content yet for suggestions.')
         return
       }

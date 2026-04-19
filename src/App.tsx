@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import type { AppSettings, Vibe } from './types'
-import { SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS, intentLabelMap } from './constants'
+import { SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS, intentLabelMap, MIN_STOP_CONTEXT_CHARS } from './constants'
 import { getVibeFromText } from './lib/utils'
 import { buildExportPayload } from './lib/groq'
 import { useTranscript } from './hooks/useTranscript'
@@ -83,14 +83,14 @@ function App() {
     suggestions.stopAllTimers()
     // Flush audio, wait for transcriptions, do final commit.
     await recorder.stop()
-    // Capture AFTER the final commit — commitPendingTranscript may have
-    // just set hasFirstRealCommitRef to true for the first time.
-    const hadContent = transcript.hasFirstRealCommitRef.current
+    // Capture transcript length AFTER flush/commit, BEFORE reset.
+    // Uses a lower threshold than auto-refresh so short recordings also get a final batch.
+    const transcriptLength = transcript.transcriptTextRef.current.trim().length
     // Reset speech-tracking state for both hooks.
     transcript.resetSession()
     suggestions.resetSession()
-    // Fire one final suggestion batch if the session had real speech.
-    if (hadContent && transcript.transcriptTextRef.current.trim()) {
+    // Fire one final suggestion batch if enough content was recorded.
+    if (transcriptLength >= MIN_STOP_CONTEXT_CHARS) {
       void suggestions.refreshSuggestions('stop')
     }
   }
