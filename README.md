@@ -20,13 +20,15 @@ Everything runs directly in the browser. There is no backend server — all AI c
 
 ## Tech stack
 
-- **UI** — React 18 with TypeScript
-- **Build tool** — Vite
-- **Transcription** — Groq Whisper (whisper-large-v3)
-- **Suggestions and Chat** — Groq Chat (openai/gpt-oss-120b)
-- **Markdown rendering** — react-markdown
-- **Styling** — Plain CSS, no UI framework
-- **Persistence** — localStorage for settings only; all session data is in-memory
+| Layer | Choice |
+|---|---|
+| UI | React 18 with TypeScript |
+| Build tool | Vite |
+| Transcription | Groq Whisper (whisper-large-v3) |
+| Suggestions and Chat | Groq Chat (openai/gpt-oss-120b) |
+| Markdown rendering | react-markdown |
+| Styling | Plain CSS, no UI framework |
+| Persistence | localStorage for settings only; all session data is in-memory |
 
 ---
 
@@ -66,7 +68,7 @@ The app has three panels side by side.
 Shows confirmed transcript entries with timestamps. A live unconfirmed preview appears below them. Start and stop the mic from here.
 
 **Middle — Live Suggestions**
-Shows suggestion batches, newest on top. Each card has an intent label (question to ask, answer, fact check, or talking point), a short preview, and a title. Click any card to expand it in Chat.
+Shows suggestion batches, newest on top. Each card has an intent label (question to ask, answer, fact check, talking point, or clarify), a short preview, and a title. Click any card to expand it in Chat.
 
 **Right — Chat**
 A running conversation with the AI. Gets populated either by clicking suggestion cards or by typing your own questions. Always available, even when the mic is off.
@@ -154,7 +156,7 @@ Answers any free-form question using the transcript as the primary source. Same 
 
 **Rules always enforced in code**
 
-Eight guardrails are always injected into every detail and chat system prompt in code, regardless of what is stored in localStorage. This means they cannot be accidentally removed by resetting or editing prompts. They cover: answering the actual intent, staying on topic, using the transcript as the source of truth, not inventing facts, labelling uncertainty, keeping every sentence relevant, using the session date header for dates, and never appending attribution signatures.
+Nine guardrails are always injected into every detail and chat system prompt in code, regardless of what is stored in localStorage. This means they cannot be accidentally removed by resetting or editing prompts. They cover: answering the actual intent, staying on topic, using the transcript as the source of truth, not inventing facts, labelling uncertainty, keeping every sentence relevant, using the session date header for dates, never appending attribution signatures, and never offering unsolicited follow-up actions.
 
 ---
 
@@ -162,9 +164,11 @@ Eight guardrails are always injected into every detail and chat system prompt in
 
 **Retry logic**
 
-- Whisper 503 (over capacity) — retries up to 4 times with backoff: 1s, 2s, 4s
-- Chat 429 per-minute rate limit — retries up to 4 times with backoff: 2s, 4s, 8s
-- Chat 429 daily token limit — the error body is checked for "tokens per day". If that is the cause, the request is not retried at all. Retrying a daily limit only burns more of the remaining quota
+| Scenario | Retries | Backoff |
+|---|---|---|
+| Whisper 503 (over capacity) | Up to 4 attempts | 1s, 2s, 4s |
+| Chat 429 per-minute rate limit | Up to 4 attempts | 2s, 4s, 8s |
+| Chat 429 daily token limit | No retry | Error surfaced immediately — retrying a daily limit only burns remaining quota |
 
 **Daily token limit handling**
 
@@ -174,14 +178,16 @@ When the daily quota is reached, the app does not show a red error. Instead it s
 
 ## Settings reference
 
-- **Groq API Key** — your key, stored in localStorage
-- **Meeting Context** — background text injected into every AI prompt
-- **Suggestion interval** — how often auto-refresh fires, default 30 000 ms, minimum 10 000 ms
-- **Suggestion context chars** — how much recent transcript is sent for suggestions, default 4 500
-- **Detail answer context chars** — how much recent transcript is sent when expanding a suggestion into a full answer, default 8 000
-- **Chat context chars** — how much recent transcript is sent for chat, default 8 500
-- **Noise gate** — when on, skips audio chunks below the size threshold
-- **Min chunk size** — the noise gate threshold, default 25 KB
+| Setting | Default | Description |
+|---|---|---|
+| Groq API Key | — | Your key, stored in localStorage, sent only to Groq |
+| Meeting Context | — | Background text injected into every AI prompt |
+| Suggestion interval | 30 000 ms | How often auto-refresh fires (minimum 10 000 ms) |
+| Suggestion context chars | 4 500 | How much recent transcript is sent for suggestions |
+| Detail answer context chars | 8 000 | How much transcript is sent when expanding a suggestion into a full answer |
+| Chat context chars | 8 500 | How much recent transcript is sent for chat |
+| Noise gate | Off | When on, skips audio chunks below the size threshold |
+| Min chunk size | 25 KB | The noise gate threshold |
 
 ---
 
@@ -193,7 +199,7 @@ When the daily quota is reached, the app does not show a red error. Instead it s
 
 **No request cancellation** — If a suggestion or chat request is in flight when you stop the mic, it will complete and the result will appear. Adding AbortController support would fix this cleanly but was not prioritized.
 
-**Vibe detection is keyword-based** — It counts keyword matches, not semantic meaning. It can misread sarcasm or sentences where a critical-sounding word is used in a positive context.
+**Vibe detection is keyword-based** — It counts keyword matches against a curated set of meeting-specific terms across positive, neutral, and critical categories. This is intentionally lightweight — it updates in real time without any extra API calls or latency. A full semantic sentiment model would be more precise but would add cost and delay on every transcript update.
 
 **Noise gate is size-based** — Blob size is used as a rough proxy for whether speech was present. Real voice activity detection would be more accurate but adds significant complexity.
 
@@ -237,7 +243,7 @@ The fix was to record the exact date, start time, and timezone when you click St
 
 ---
 
-**Eight-rule guardrail system**
+**Nine-rule guardrail system**
 
 The model was occasionally drifting — adding attribution signatures like "Prepared by: Internal meeting recorder", inventing context not in the transcript, or answering a broader question than the one asked.
 
@@ -249,7 +255,7 @@ The attribution filter also runs on the output after the model responds — any 
 
 ## Vibe indicator
 
-The vibe pill at the top updates every 5 seconds based on the most recent 2000 characters of the committed transcript.
+The vibe pill at the top updates whenever a new transcript chunk is committed (roughly every 30 seconds), based on the most recent 2000 characters of the confirmed transcript.
 
 - **Critical (red)** — words like blocked, bug, crash, outage, failure, risk, escalate, behind schedule, and similar
 - **Positive (green)** — words like shipped, launched, great job, well done, congratulations, kudos, on track, approved, and similar
