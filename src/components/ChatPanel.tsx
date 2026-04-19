@@ -5,6 +5,7 @@ type Props = {
   chatMessages: ChatMessage[]
   chatInput: string
   isSendingChat: boolean
+  chatEndRef: React.RefObject<HTMLDivElement | null>
   onInputChange: (val: string) => void
   onSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => void
 }
@@ -13,6 +14,7 @@ export default function ChatPanel({
   chatMessages,
   chatInput,
   isSendingChat,
+  chatEndRef,
   onInputChange,
   onSubmit,
 }: Props) {
@@ -46,6 +48,7 @@ export default function ChatPanel({
               </div>
             </div>
           ))}
+          <div ref={chatEndRef} />
         </div>
         <form onSubmit={onSubmit} className="chat-form">
           <input

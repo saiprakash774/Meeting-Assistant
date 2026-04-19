@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AppSettings, ChatMessage, ChatRole, Suggestion } from '../types'
 import { createAssistantChatReply, createDetailedSuggestionAnswer } from '../lib/groq'
 import { buildSessionHeader, isDailyLimitError, extractWaitTime, makeId, nowIso, sanitizeAssistantMarkdown } from '../lib/utils'
@@ -15,6 +15,11 @@ export function useChat({ settingsRef, transcriptTextRef, sessionStartRef, onErr
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [isSendingChat, setIsSendingChat] = useState(false)
   const [chatInput, setChatInput] = useState('')
+
+  const chatEndRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [chatMessages])
 
   const addChatMessage = (
     role: ChatRole,
@@ -113,6 +118,7 @@ export function useChat({ settingsRef, transcriptTextRef, sessionStartRef, onErr
     isSendingChat,
     chatInput,
     setChatInput,
+    chatEndRef,
     handleSuggestionClick,
     handleChatSubmit,
   }

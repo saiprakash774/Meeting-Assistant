@@ -177,6 +177,7 @@ function App() {
             chatMessages={chat.chatMessages}
             chatInput={chat.chatInput}
             isSendingChat={chat.isSendingChat}
+            chatEndRef={chat.chatEndRef}
             onInputChange={chat.setChatInput}
             onSubmit={chat.handleChatSubmit}
           />
