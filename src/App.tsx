@@ -26,6 +26,9 @@ function App() {
 
   // Ref mirror of settings so hooks with interval callbacks always read fresh values.
   const settingsRef = useRef(settings)
+  // Tracks transcript length at the last stop-trigger suggestion so repeated
+  // stop/start cycles with no new speech don't re-fire on stale content.
+  const lastStopTriggerLengthRef = useRef(0)
   useEffect(() => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
     settingsRef.current = settings
@@ -84,13 +87,16 @@ function App() {
     // Flush audio, wait for transcriptions, do final commit.
     await recorder.stop()
     // Capture transcript length AFTER flush/commit, BEFORE reset.
-    // Uses a lower threshold than auto-refresh so short recordings also get a final batch.
     const transcriptLength = transcript.transcriptTextRef.current.trim().length
+    // Only count chars added since the last stop-trigger so repeated stop/start
+    // cycles with no new speech don't re-fire on already-processed content.
+    const newChars = transcriptLength - lastStopTriggerLengthRef.current
     // Reset speech-tracking state for both hooks.
     transcript.resetSession()
     suggestions.resetSession()
-    // Fire one final suggestion batch if enough content was recorded.
-    if (transcriptLength >= MIN_STOP_CONTEXT_CHARS) {
+    // Fire one final suggestion batch only if enough new content was recorded.
+    if (newChars >= MIN_STOP_CONTEXT_CHARS) {
+      lastStopTriggerLengthRef.current = transcriptLength
       void suggestions.refreshSuggestions('stop')
     }
   }
