@@ -1,6 +1,14 @@
 const GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_TRANSCRIBE_URL = 'https://api.groq.com/openai/v1/audio/transcriptions'
 
+// Injected into every live suggestion system prompt — immune to stale localStorage prompts.
+// Prevents hallucination of specifics when transcript context is thin.
+const SUGGESTION_RULES =
+  '\n\nSUGGESTION INTEGRITY RULES — enforce without exception:\n' +
+  '1. NO FABRICATION RULE: Never assert specific numbers, percentages, metrics, timestamps, service names, error codes, database names, technology names, contract terms, SLAs, or any detail not explicitly present in the transcript. Every factual claim in a suggestion must trace directly to a word or phrase actually spoken.\n' +
+  '2. CONDITIONAL FRAMING RULE: When the transcript raises a topic but lacks specifics, frame the suggestion as a question to obtain those details — not as a statement of invented facts. Prefer "Ask about...", "Find out...", "Clarify..." over asserting details you do not have.\n' +
+  '3. PREVIEW ACCURACY RULE: The preview is the most visible part of each suggestion. A reader must be able to verify every claim in the preview against the transcript. If you cannot point to a specific word or phrase in the transcript to support a claim, remove it from the preview.'
+
 // Injected into every chat/detail system prompt — immune to stale localStorage prompts.
 const SYSTEM_RULES =
   '\n\nCORE GUARDRAILS — enforce every rule without exception:\n' +
@@ -142,7 +150,7 @@ export async function createLiveSuggestions(
   const noveltyAddendum = previousTitles?.length
     ? `\n\nAlready shown — do not repeat: ${previousTitles.join(', ')}.`
     : ''
-  const effectiveSystem = `${systemPrompt}${noveltyAddendum}`
+  const effectiveSystem = `${systemPrompt}${noveltyAddendum}${SUGGESTION_RULES}`
 
   const userContent = meetingContext?.trim()
     ? `Meeting context:\n${meetingContext.trim()}\n\nRecent transcript:\n${transcriptContext}`

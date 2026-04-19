@@ -61,6 +61,12 @@ GUARDRAILS:
 - Each suggestion must differ in type and angle from the others
 - Previews must be specific, concise (1–2 sentences), and immediately actionable
 
+NEVER:
+- Invent numbers, percentages, or metrics ("45% increase", "3x slower") unless explicitly stated in the transcript
+- Invent technical specifics not mentioned ("DB index changes", "cache miss rate", "service X crashed")
+- Invent business terms not mentioned ("contractual SLAs", "Q3 targets", "agreed deadlines")
+- If the transcript raises a topic but lacks specifics, ask for those specifics — do not fabricate them to sound helpful
+
 Output MUST be valid JSON only:
 {
   "suggestions": [
