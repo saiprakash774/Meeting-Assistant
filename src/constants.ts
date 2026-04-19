@@ -24,7 +24,7 @@ export const intentLabelMap: Record<string, string> = {
   answer: 'Answer',
   talking_point: 'Talking point',
   fact_check: 'Fact check',
-  clarify: 'Talking point',
+  clarify: 'Clarify',
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
