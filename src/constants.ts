@@ -15,6 +15,9 @@ export const SILENCE_THRESHOLD_MS = 60_000
 export const MIN_REAL_COMMIT_WORDS = 5
 // Minimum context chars before calling the suggestion API.
 export const MIN_SUGGESTION_CONTEXT_CHARS = 300
+// Minimum context chars to trigger a final suggestion batch on Stop Mic.
+// Lower than MIN_SUGGESTION_CONTEXT_CHARS to handle short recordings.
+export const MIN_STOP_CONTEXT_CHARS = 75
 // Minimum new chars since last generation before allowing manual reload.
 export const MIN_NEW_CHARS_FOR_REFRESH = 150
 
