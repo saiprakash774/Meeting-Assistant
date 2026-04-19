@@ -18,10 +18,29 @@ There is no test runner configured.
 
 **TwinMind Live Suggestions** is a single-page React/TypeScript app that records microphone audio, transcribes it via Groq Whisper, and generates contextual meeting suggestions using Groq's chat API. No backend — all API calls go directly from the browser.
 
-### Two-file source structure
+### Source structure
 
-- [src/App.tsx](src/App.tsx) — the entire UI and application logic. One large functional component managing all state.
-- [src/lib/groq.ts](src/lib/groq.ts) — async functions wrapping Groq REST API calls: `transcribeAudioChunk`, `createLiveSuggestions`, `createDetailedSuggestionAnswer`, `createAssistantChatReply`, and `buildExportPayload`.
+```
+src/
+  types.ts              — all shared TypeScript types (TranscriptEntry, Suggestion, AppSettings, …)
+  constants.ts          — all constants, DEFAULT_SETTINGS, intentLabelMap, TRANSCRIPT_NOISE_PATTERNS
+  lib/
+    groq.ts             — async functions wrapping Groq REST API: transcribeAudioChunk, createLiveSuggestions,
+                          createDetailedSuggestionAnswer, createAssistantChatReply, buildExportPayload
+    utils.ts            — nowIso, makeId, sanitizeAssistantMarkdown, getVibeFromText, buildSessionHeader,
+                          isDailyLimitError, extractWaitTime, ATTRIBUTION_RE, FOLLOWUP_OFFER_RE
+  hooks/
+    useTranscript.ts    — transcript[], livePreview[], hasFirstRealCommit, transcriptTextRef, pendingTranscriptPartsRef
+    useAudioRecorder.ts — MediaRecorder lifecycle, 5s cycles, transcript commit timer, flushAndCommitAllPending
+    useSuggestions.ts   — suggestion batches, auto-refresh timer, silence watch, daily-limit handling
+    useChat.ts          — chatMessages[], handleSuggestionClick, handleChatSubmit
+  components/
+    TranscriptPanel.tsx   — left column (purely presentational)
+    SuggestionsPanel.tsx  — middle column (purely presentational)
+    ChatPanel.tsx         — right column, uses ReactMarkdown (purely presentational)
+    SettingsScreen.tsx    — settings overlay (purely presentational)
+  App.tsx               — thin orchestration: wires hooks together, handleStart/handleStop, export, cleanup (~184 lines)
+```
 
 ### Data flow
 
@@ -89,6 +108,6 @@ Context windows are sliced from `transcriptTextRef.current` (a plain-text buffer
 - Center: suggestion batches, newest on top, with reload button and countdown
 - Right: chat interface with session-only badge
 
-### TypeScript types (all in App.tsx)
+### TypeScript types
 
-`TranscriptEntry`, `Suggestion`, `SuggestionBatch`, `ChatMessage`, `AppSettings`, `Vibe`, `ChatRole`, `RefreshTrigger` — all defined inline before the component.
+All shared types live in [src/types.ts](src/types.ts): `TranscriptEntry`, `Suggestion`, `SuggestionBatch`, `ChatMessage`, `AppSettings`, `Vibe`, `ChatRole`, `RefreshTrigger`.
