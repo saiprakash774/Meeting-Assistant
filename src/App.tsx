@@ -86,8 +86,11 @@ function App() {
     suggestions.stopAllTimers()
     // Flush audio, wait for transcriptions, do final commit.
     await recorder.stop()
-    // Capture transcript length AFTER flush/commit, BEFORE reset.
+    // Capture transcript length and full text AFTER flush/commit, BEFORE reset.
+    // The snapshot is passed directly to the stop-trigger so it has complete
+    // context even after resetSession clears the session base offset.
     const transcriptLength = transcript.transcriptTextRef.current.trim().length
+    const snapshotText = transcript.transcriptTextRef.current
     // Only count chars added since the last stop-trigger so repeated stop/start
     // cycles with no new speech don't re-fire on already-processed content.
     const newChars = transcriptLength - lastStopTriggerLengthRef.current
@@ -97,7 +100,7 @@ function App() {
     // Fire one final suggestion batch only if enough new content was recorded.
     if (newChars >= MIN_STOP_CONTEXT_CHARS) {
       lastStopTriggerLengthRef.current = transcriptLength
-      void suggestions.refreshSuggestions('stop')
+      void suggestions.refreshSuggestions('stop', snapshotText)
     }
   }
 
