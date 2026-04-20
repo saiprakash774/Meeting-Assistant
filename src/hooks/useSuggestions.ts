@@ -241,12 +241,12 @@ export function useSuggestions({
         previousTitles,
       )
 
+      lastSuggestionContextLengthRef.current = rawContext.length
+
       if (suggestions.length < 2) {
         if (trigger === 'manual') setRefreshStatus('Not enough distinct content for a new suggestion batch yet.')
         return
       }
-
-      lastSuggestionContextLengthRef.current = rawContext.length
       const newBatch: SuggestionBatch = {
         id: makeId(),
         createdAt: nowIso(),
