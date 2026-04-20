@@ -162,7 +162,7 @@ export async function createLiveSuggestions(
     body: JSON.stringify({
       model: 'openai/gpt-oss-120b',
       temperature: 0.3,
-      max_tokens: 550,
+      max_tokens: 700,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: effectiveSystem },
@@ -173,9 +173,10 @@ export async function createLiveSuggestions(
 
   if (!response.ok) {
     const body = await response.text()
-    // json_validate_failed means the model returned empty — context too short or ambiguous.
-    // Return no suggestions rather than surfacing a confusing API error to the user.
-    if (body.includes('json_validate_failed') || body.includes('failed_generation')) return []
+    // Any 400 from json_object mode (truncated output, content policy, malformed JSON)
+    // is non-critical — skip the batch silently. The timer retries in 30 seconds.
+    // Non-400 failures (auth errors, server errors) still surface to the user.
+    if (response.status === 400 || body.includes('json_validate_failed') || body.includes('failed_generation')) return []
     throw new Error(`Suggestion request failed: ${parseGroqErrorMessage(response.status, body)}`)
   }
 

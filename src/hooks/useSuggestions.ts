@@ -179,15 +179,17 @@ export function useSuggestions({
         return
       }
 
-      if (trigger === 'manual' && lastSuggestionContextLengthRef.current > 0) {
-        const newChars = context.length - lastSuggestionContextLengthRef.current
+      if (trigger !== 'stop' && lastSuggestionContextLengthRef.current > 0) {
+        const newChars = rawContext.length - lastSuggestionContextLengthRef.current
         if (newChars < MIN_NEW_CHARS_FOR_REFRESH) {
-          const timerPaused = suggestionsIntervalRef.current === null
-          setRefreshStatus(
-            timerPaused
-              ? 'No major new discussion points yet. Auto-refresh is paused — waiting for speech.'
-              : 'No major new discussion points yet. Auto-refresh will trigger when more context arrives.',
-          )
+          if (trigger === 'manual') {
+            const timerPaused = suggestionsIntervalRef.current === null
+            setRefreshStatus(
+              timerPaused
+                ? 'No major new discussion points yet. Auto-refresh is paused — waiting for speech.'
+                : 'No major new discussion points yet. Auto-refresh will trigger when more context arrives.',
+            )
+          }
           return
         }
       }
@@ -212,7 +214,7 @@ export function useSuggestions({
         return
       }
 
-      lastSuggestionContextLengthRef.current = context.length
+      lastSuggestionContextLengthRef.current = rawContext.length
       const newBatch: SuggestionBatch = {
         id: makeId(),
         createdAt: nowIso(),
