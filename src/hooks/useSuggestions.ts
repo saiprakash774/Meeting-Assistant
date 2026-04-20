@@ -7,6 +7,7 @@ import {
   SILENCE_THRESHOLD_MS,
   MIN_SUGGESTION_CONTEXT_CHARS,
   MIN_NEW_CHARS_FOR_REFRESH,
+  TRANSCRIPT_COMMIT_INTERVAL_MS,
 } from '../constants'
 
 type Params = {
@@ -54,6 +55,7 @@ export function useSuggestions({
   const suggestionsIntervalRef = useRef<number | null>(null)
   const countdownIntervalRef = useRef<number | null>(null)
   const silenceWatchRef = useRef<number | null>(null)
+  const waitingForSpeechTimerRef = useRef<number | null>(null)
 
   // ── Timer helpers ──
 
@@ -108,9 +110,17 @@ export function useSuggestions({
     }, 1_000)
   }
 
+  const clearWaitingForSpeechTimer = () => {
+    if (waitingForSpeechTimerRef.current) {
+      window.clearTimeout(waitingForSpeechTimerRef.current)
+      waitingForSpeechTimerRef.current = null
+    }
+  }
+
   const stopAllTimers = () => {
     stopSuggestionTimer()
     stopSilenceWatch()
+    clearWaitingForSpeechTimer()
   }
 
   // ── Suggestion timer lifecycle ──
@@ -131,6 +141,26 @@ export function useSuggestions({
     else stopSilenceWatch()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRecording])
+
+  // Waiting-for-speech notification: after 30s of recording with no real commit,
+  // show a blue status message so the user knows why suggestions haven't appeared.
+  // Clears automatically once the first real commit arrives.
+  useEffect(() => {
+    clearWaitingForSpeechTimer()
+    if (isRecording && !hasFirstRealCommit) {
+      waitingForSpeechTimerRef.current = window.setTimeout(() => {
+        setRefreshStatus('Waiting for speech — suggestions will appear after your first 30 seconds of talking.')
+      }, TRANSCRIPT_COMMIT_INTERVAL_MS)
+    } else {
+      setRefreshStatus((prev) =>
+        prev === 'Waiting for speech — suggestions will appear after your first 30 seconds of talking.'
+          ? null
+          : prev,
+      )
+    }
+    return () => clearWaitingForSpeechTimer()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRecording, hasFirstRealCommit])
 
   // ── Core suggestion refresh ──
 
@@ -196,9 +226,11 @@ export function useSuggestions({
 
       // Use the ref to get the latest batches — the state value captured at
       // timer-start time would be stale after several batches are generated.
-      const previousTitles = suggestionBatchesRef.current
-        .slice(0, 3)
-        .flatMap((b) => b.suggestions.map((s) => s.title))
+      const previousTitles = [...new Set(
+        suggestionBatchesRef.current
+          .slice(0, 3)
+          .flatMap((b) => b.suggestions.map((s) => s.title))
+      )]
 
       const t0 = Date.now()
       const suggestions = await createLiveSuggestions(
