@@ -72,7 +72,7 @@ All session state (transcript, suggestions, chat) is in-memory — lost on page 
 | Function | Model | Max tokens | Temp |
 |---|---|---|---|
 | `transcribeAudioChunk` | `whisper-large-v3` | — | — |
-| `createLiveSuggestions` | `openai/gpt-oss-120b` | 550 | 0.3 |
+| `createLiveSuggestions` | `openai/gpt-oss-120b` | 700 | 0.3 |
 | `createDetailedSuggestionAnswer` | `openai/gpt-oss-120b` | 2 000 | 0.35 |
 | `createAssistantChatReply` | `openai/gpt-oss-120b` | 2 000 | 0.35 |
 
@@ -84,14 +84,22 @@ Context windows are sliced from `transcriptTextRef.current` (a plain-text buffer
 |---|---|---|
 | `MIN_REAL_COMMIT_WORDS` | 5 | A 30s commit must have ≥5 words to count as real speech |
 | `MIN_SUGGESTION_CONTEXT_CHARS` | 300 | Context must be ≥300 chars before any suggestion API call |
-| `MIN_NEW_CHARS_FOR_REFRESH` | 150 | Manual reload requires ≥150 new chars since last generation |
+| `MIN_NEW_CHARS_FOR_REFRESH` | 150 | Manual and auto reload require ≥150 new chars since last generation |
+| `MIN_STOP_CONTEXT_CHARS` | 75 | Stop-trigger requires ≥75 total chars (lower than auto-refresh threshold) |
 | `SILENCE_THRESHOLD_MS` | 60 000 | No real commit for 60s → pause suggestion timer |
 | `REFRESH_COOLDOWN_MS` | 10 000 | Minimum gap between manual reloads |
 
 ### Guardrails (two layers)
 
-1. **API layer** (`groq.ts` `SYSTEM_RULES`): 8 hard rules injected into every detail/chat system prompt — immune to stale localStorage prompts. Covers intent, focus, context anchoring, accuracy, uncertainty labelling, relevance, date handling, and no-attribution.
+1. **API layer** (`groq.ts`):
+   - `SYSTEM_RULES` — 10 hard rules injected into every detail/chat system prompt. Covers intent, focus, context anchoring, accuracy, uncertainty labelling, relevance, date handling, no-attribution, no unsolicited follow-up offers, and **no invented dates/times/specifics in action items** (Rule 10, added to prevent fabrication when transcript context is thin).
+   - `SUGGESTION_RULES` — 3 hard rules injected into every suggestion prompt. Covers no-fabrication of metrics/names/specifics, conditional framing when transcript lacks detail, and preview accuracy.
+   - Both are immune to stale localStorage prompts — they are injected in code after any user-edited prompt.
 2. **Prompt layer** (`DEFAULT_SETTINGS`): BEFORE/WHEN/QUALITY CHECK structure in all three prompts. Includes topic discipline, no-invented-facts, and structured output rules.
+
+### Anti-repetition in suggestions
+
+`previousTitles` (passed as the novelty addendum to `createLiveSuggestions`) is built with `[...new Set(...)]` to deduplicate titles across the last 3 batches. Without this, the same title appearing in multiple batches would be sent to the model multiple times, wasting tokens.
 
 ### Suggestion parsing
 
