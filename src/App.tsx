@@ -101,6 +101,8 @@ function App() {
     if (newChars >= MIN_STOP_CONTEXT_CHARS) {
       lastStopTriggerLengthRef.current = transcriptLength
       void suggestions.refreshSuggestions('stop', snapshotText)
+    } else {
+      suggestions.setRefreshStatus('Recording was too short to generate suggestions.')
     }
   }
 

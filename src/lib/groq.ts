@@ -163,7 +163,7 @@ export async function createLiveSuggestions(
     body: JSON.stringify({
       model: 'openai/gpt-oss-120b',
       temperature: 0.3,
-      max_tokens: 700,
+      max_tokens: 1000,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: effectiveSystem },
@@ -189,24 +189,54 @@ export async function createLiveSuggestions(
   return parseSuggestions(content)
 }
 
-export async function createDetailedSuggestionAnswer(
+// Reads a streaming SSE response and yields each content token.
+async function* readSSEStream(response: Response): AsyncGenerator<string, void, unknown> {
+  if (!response.body) return
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6).trim()
+        if (data === '[DONE]') return
+        try {
+          const parsed = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string } }> }
+          const token = parsed.choices?.[0]?.delta?.content
+          if (token) yield token
+        } catch { /* ignore malformed SSE chunks */ }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+export async function* streamDetailedSuggestionAnswer(
   apiKey: string,
   detailPrompt: string,
   transcriptContext: string,
   suggestion: Suggestion,
   meetingContext?: string,
-): Promise<string> {
+): AsyncGenerator<string, void, unknown> {
   const contextBlock = meetingContext?.trim()
     ? `Meeting context:\n${meetingContext.trim()}\n\nTranscript context:\n${transcriptContext}`
     : `Transcript context:\n${transcriptContext}`
 
-  const response = await fetchWithRetry(GROQ_CHAT_URL, {
+  const response = await fetch(GROQ_CHAT_URL, {
     method: 'POST',
     headers: jsonHeaders(apiKey),
     body: JSON.stringify({
       model: 'openai/gpt-oss-120b',
       temperature: 0.35,
       max_tokens: 2_000,
+      stream: true,
       messages: [
         { role: 'system', content: `${detailPrompt}${SYSTEM_RULES}` },
         {
@@ -221,19 +251,16 @@ export async function createDetailedSuggestionAnswer(
     const body = await response.text()
     throw new Error(`Suggestion expansion failed: ${parseGroqErrorMessage(response.status, body)}`)
   }
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>
-  }
-  return data.choices?.[0]?.message?.content?.trim() || 'No response returned.'
+  yield* readSSEStream(response)
 }
 
-export async function createAssistantChatReply(
+export async function* streamAssistantChatReply(
   apiKey: string,
   chatPrompt: string,
   transcriptContext: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }>,
   meetingContext?: string,
-): Promise<string> {
+): AsyncGenerator<string, void, unknown> {
   const contextSection = meetingContext?.trim()
     ? `Meeting context:\n${meetingContext.trim()}\n\nTranscript context:\n${transcriptContext}`
     : `Transcript context:\n${transcriptContext}`
@@ -243,13 +270,14 @@ export async function createAssistantChatReply(
     content: item.content,
   }))
 
-  const response = await fetchWithRetry(GROQ_CHAT_URL, {
+  const response = await fetch(GROQ_CHAT_URL, {
     method: 'POST',
     headers: jsonHeaders(apiKey),
     body: JSON.stringify({
       model: 'openai/gpt-oss-120b',
       temperature: 0.35,
       max_tokens: 2_000,
+      stream: true,
       messages: [
         { role: 'system', content: `${chatPrompt}${SYSTEM_RULES}\n\n${contextSection}` },
         ...trimmedHistory,
@@ -261,10 +289,7 @@ export async function createAssistantChatReply(
     const body = await response.text()
     throw new Error(`Chat request failed: ${parseGroqErrorMessage(response.status, body)}`)
   }
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>
-  }
-  return data.choices?.[0]?.message?.content?.trim() || 'No response returned.'
+  yield* readSSEStream(response)
 }
 
 export function buildExportPayload(input: {

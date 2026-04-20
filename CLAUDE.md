@@ -26,7 +26,7 @@ src/
   constants.ts          — all constants, DEFAULT_SETTINGS, intentLabelMap, TRANSCRIPT_NOISE_PATTERNS
   lib/
     groq.ts             — async functions wrapping Groq REST API: transcribeAudioChunk, createLiveSuggestions,
-                          createDetailedSuggestionAnswer, createAssistantChatReply, buildExportPayload
+                          streamDetailedSuggestionAnswer, streamAssistantChatReply, buildExportPayload
     utils.ts            — nowIso, makeId, sanitizeAssistantMarkdown, getVibeFromText, buildSessionHeader,
                           isDailyLimitError, extractWaitTime, ATTRIBUTION_RE, FOLLOWUP_OFFER_RE
   hooks/
@@ -55,12 +55,12 @@ Timer (starts after first real 30s commit)
   → suggestionBatches[] state    (newest-first, each batch has up to 3 suggestions)
 
 User clicks suggestion
-  → createDetailedSuggestionAnswer()
+  → streamDetailedSuggestionAnswer()  [streaming SSE — tokens appear word by word]
   → chat panel with full markdown answer
 
 User types in chat
-  → createAssistantChatReply()   [last 12 messages + transcript context]
-  → chatMessages[] state
+  → streamAssistantChatReply()   [streaming SSE — last 12 messages + transcript context]
+  → chatMessages[] state         (placeholder added immediately, updated per token)
 ```
 
 ### State & persistence
@@ -72,9 +72,9 @@ All session state (transcript, suggestions, chat) is in-memory — lost on page 
 | Function | Model | Max tokens | Temp |
 |---|---|---|---|
 | `transcribeAudioChunk` | `whisper-large-v3` | — | — |
-| `createLiveSuggestions` | `openai/gpt-oss-120b` | 700 | 0.3 |
-| `createDetailedSuggestionAnswer` | `openai/gpt-oss-120b` | 2 000 | 0.35 |
-| `createAssistantChatReply` | `openai/gpt-oss-120b` | 2 000 | 0.35 |
+| `createLiveSuggestions` | `openai/gpt-oss-120b` | 1 000 | 0.3 |
+| `streamDetailedSuggestionAnswer` | `openai/gpt-oss-120b` | 2 000 | 0.35 |
+| `streamAssistantChatReply` | `openai/gpt-oss-120b` | 2 000 | 0.35 |
 
 Context windows are sliced from `transcriptTextRef.current` (a plain-text buffer, not React state) to avoid re-renders. Default sizes: suggestions=4 500 chars, chat=8 500 chars. Session date header is prepended to all context strings via `buildSessionHeader()`.
 
