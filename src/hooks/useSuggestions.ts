@@ -249,6 +249,7 @@ export function useSuggestions({
 
       if (suggestions.length < 2) {
         if (trigger === 'manual') setRefreshStatus('Not enough distinct content for a new suggestion batch yet.')
+        else if (trigger === 'stop') setRefreshStatus('Not enough speech in this recording to generate suggestions.')
         return
       }
       const newBatch: SuggestionBatch = {
@@ -305,6 +306,7 @@ export function useSuggestions({
     isSuggestionTimerActive,
     nextRefreshInSec,
     refreshStatus,
+    setRefreshStatus,
     reloadDisabled,
     countdownLabel,
     refreshSuggestions,
