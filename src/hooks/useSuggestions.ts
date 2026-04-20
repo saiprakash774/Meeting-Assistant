@@ -51,6 +51,9 @@ export function useSuggestions({
   const lastRefreshAtRef = useRef(0)
   const lastSuggestionContextLengthRef = useRef(0)
   const prevHasFirstRealCommitRef = useRef(false)
+  // Offset into transcriptTextRef at the start of the current session.
+  // Ensures suggestions only use content from the current session, not prior ones.
+  const sessionContextBaseRef = useRef(0)
 
   const suggestionsIntervalRef = useRef<number | null>(null)
   const countdownIntervalRef = useRef<number | null>(null)
@@ -164,7 +167,7 @@ export function useSuggestions({
 
   // ── Core suggestion refresh ──
 
-  const refreshSuggestions = async (trigger: RefreshTrigger = 'manual'): Promise<void> => {
+  const refreshSuggestions = async (trigger: RefreshTrigger = 'manual', contextOverride?: string): Promise<void> => {
     if (!settingsRef.current.apiKey) {
       onError('Add your Groq API key in Settings first.')
       return
@@ -197,9 +200,10 @@ export function useSuggestions({
       if (isRecordingRef.current && speakingRecently) await flushAndCommitAllPending()
 
       const pendingText = pendingTranscriptPartsRef.current.join(' ').trim()
-      const rawContext = pendingText
-        ? `${transcriptTextRef.current}\n${pendingText}`
-        : transcriptTextRef.current
+      // For stop-trigger: use the pre-reset snapshot passed from handleStop.
+      // For live sessions: slice from session start so prior sessions don't bleed in.
+      const sessionText = contextOverride ?? transcriptTextRef.current.slice(sessionContextBaseRef.current)
+      const rawContext = pendingText ? `${sessionText}\n${pendingText}` : sessionText
       const context =
         buildSessionHeader(sessionStartRef.current) +
         rawContext.slice(-settingsRef.current.suggestionContextChars)
@@ -279,6 +283,7 @@ export function useSuggestions({
     prevHasFirstRealCommitRef.current = false
     lastSuggestionContextLengthRef.current = 0
     lastRefreshAtRef.current = 0
+    sessionContextBaseRef.current = transcriptTextRef.current.length
     setIsSuggestionTimerActive(false)
     setNextRefreshInSec(Math.ceil(settingsRef.current.suggestionIntervalMs / 1000))
     setRefreshStatus(null)
